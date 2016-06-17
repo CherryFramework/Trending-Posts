@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Trending Posts
  * Plugin URI:
- * Description: Adds rating and views count for posts and cutom post types.
+ * Description: Adds rating and views count for posts and custom post types.
  * Version:     1.0.0
  * Author:      Template Monster
  * Author URI:  http://www.templatemonster.com/
@@ -62,6 +62,9 @@ if ( ! class_exists( 'TM_Trending_Posts' ) ) {
 
 			// Load the core class.
 			add_action( 'after_setup_theme', array( $this, 'get_core' ), 1 );
+
+			// Load all modules.
+			add_action( 'after_setup_theme', array( 'Cherry_Core', 'load_all_modules' ), 2 );
 
 			// Internationalize the text strings used.
 			add_action( 'after_setup_theme', array( $this, 'lang' ), 2 );
