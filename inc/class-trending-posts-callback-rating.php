@@ -182,7 +182,7 @@ if ( ! class_exists( 'TM_Trending_Posts_Callback_Rating' ) ) {
 				$stars .= sprintf( $star, $i, $active, $is_half );
 			}
 
-			$disabled = ! empty( $args['is_disabled'] ) ? ' rate-disabled' : '';
+			$disabled = ! empty( $args['is_disabled'] ) && true == $args['is_disabled'] ? ' rate-disabled' : '';
 
 			if ( isset( $_COOKIE[ $this->meta_key ] ) ) {
 				$rates = maybe_unserialize( $_COOKIE[ $this->meta_key ] );

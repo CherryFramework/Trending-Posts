@@ -55,10 +55,10 @@ if ( ! class_exists( 'TM_Trending_Posts_Widget' ) ) {
 				),
 				'title_length' => array(
 					'type'       => 'stepper',
-					'value'      => '25',
-					'max_value'  => '100',
-					'min_value'  => '-1',
-					'step_value' => '1',
+					'value'      => 25,
+					'max_value'  => 100,
+					'min_value'  => -1,
+					'step_value' => 1,
 					'label'      => esc_html__( 'Title length in characters (0 &mdash; hide, -1 &mdash; full)', 'trending-posts' ),
 				),
 				'filter' => array(
@@ -127,26 +127,26 @@ if ( ! class_exists( 'TM_Trending_Posts_Widget' ) ) {
 				),
 				'posts_per_page' => array(
 					'type'       => 'stepper',
-					'value'      => '3',
-					'max_value'  => '100',
-					'min_value'  => '-1',
-					'step_value' => '1',
+					'value'      => 3,
+					'max_value'  => 100,
+					'min_value'  => -1,
+					'step_value' => 1,
 					'label'      => esc_html__( 'Number of post to show (Use -1 to show all posts)', 'trending-posts' ),
 				),
 				'offset' => array(
 					'type'       => 'stepper',
-					'value'      => '0',
-					'max_value'  => '1000',
-					'min_value'  => '0',
-					'step_value' => '1',
+					'value'      => 0,
+					'max_value'  => 1000,
+					'min_value'  => 0,
+					'step_value' => 1,
 					'label'      => esc_html__( 'Offset (ignored when `posts_per_page`=>-1 (show all posts) is used)', 'trending-posts' ),
 				),
 				'excerpt_length' => array(
 					'type'       => 'stepper',
-					'value'      => '15',
-					'max_value'  => '100',
-					'min_value'  => '-1',
-					'step_value' => '1',
+					'value'      => 15,
+					'max_value'  => 100,
+					'min_value'  => -1,
+					'step_value' => 1,
 					'label'      => esc_html__( 'Excerpt length in words (0 &mdash; hide, -1 &mdash; all)', 'trending-posts' ),
 				),
 				'meta_data' => array(
@@ -279,6 +279,7 @@ if ( ! class_exists( 'TM_Trending_Posts_Widget' ) ) {
 
 			$title_length   = isset( $instance['title_length'] ) ? esc_attr( $instance['title_length'] ) : $this->settings['title_length']['value'];
 			$excerpt_length = isset( $instance['excerpt_length'] ) ? esc_attr( $instance['excerpt_length'] ) : $this->settings['excerpt_length']['value'];
+			$excerpt_length = intval( $excerpt_length );
 
 			if ( ! empty( $instance['meta_data'] ) ) {
 				$meta_data = $instance['meta_data'];
@@ -307,10 +308,19 @@ if ( ! class_exists( 'TM_Trending_Posts_Widget' ) ) {
 				'mobile_size' => 'thumbnail',
 			), $args, $instance );
 
-			$excerpt_args = apply_filters( 'tm_trending_posts_excerpt_args', array(
+			$excerpt_args = array(
+				'visible'      => true,
 				'length'       => $excerpt_length,
 				'content_type' => 'post_content',
-			), $args, $instance );
+			);
+
+			if ( 0 == $excerpt_length ) {
+				$excerpt_args['visible'] = false;
+			} else if ( -1 == $excerpt_length ) {
+				$excerpt_args['length'] = 0;
+			}
+
+			$excerpt_args = apply_filters( 'tm_trending_posts_excerpt_args', $excerpt_args, $args, $instance );
 
 			$date_args = apply_filters( 'tm_trending_posts_date_args', array(
 				'visible' => $meta_data['date'],
