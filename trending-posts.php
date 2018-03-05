@@ -3,18 +3,13 @@
  * Plugin Name: Trending Posts
  * Plugin URI:
  * Description: Adds rating and views count for posts and custom post types.
- * Version:     1.0.0
- * Author:      Template Monster
- * Author URI:  http://www.templatemonster.com/
+ * Version:     1.0.1
+ * Author:      Zemez
+ * Author URI:  https://zemez.io/wordpress/
  * Text Domain: trending-posts
  * License:     GPL-3.0+
  * License URI: http://www.gnu.org/licenses/gpl-3.0.txt
  * Domain Path: /languages
- *
- * @package  Trending Posts
- * @category Core
- * @author   Template Monster
- * @license  GPL-3.0+
  */
 
 // If this file is called directly, abort.
@@ -94,7 +89,7 @@ if ( ! class_exists( 'TM_Trending_Posts' ) ) {
 			 *
 			 * @since 1.0.0
 			 */
-			define( 'TM_TREND_POSTS_VERSION', '1.0.0' );
+			define( 'TM_TREND_POSTS_VERSION', '1.0.1' );
 
 			/**
 			 * Set constant path to the plugin directory.
@@ -152,6 +147,9 @@ if ( ! class_exists( 'TM_Trending_Posts' ) ) {
 						'autoload' => false,
 					),
 					'cherry-ui-elements' => array(
+						'autoload' => false,
+					),
+					'cherry-interface-builder' => array(
 						'autoload' => false,
 					),
 					'cherry-widget-factory' => array(

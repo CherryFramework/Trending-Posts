@@ -2,7 +2,6 @@
 /**
  * Module Name: Utility
  * Description: Multiple utility functions
- * Version: 1.1.0
  * Author: Cherry Team
  * Author URI: http://www.cherryframework.com/
  * License: GPLv3
@@ -10,9 +9,8 @@
  *
  * @package    Cherry_Framework
  * @subpackage Modules
- * @version    1.1.0
  * @author     Cherry Team <cherryframework@gmail.com>
- * @copyright  Copyright (c) 2012 - 2016, Cherry Team
+ * @copyright  Copyright (c) 2012 - 2017, Cherry Team
  * @link       http://www.cherryframework.com/
  * @license    http://www.gnu.org/licenses/gpl-3.0.html
  */
@@ -53,9 +51,18 @@ if ( ! class_exists( 'Cherry_Utility' ) ) {
 				'meta-data',
 			),
 			'meta_key' => array(
-				'term_thumb' => 'cherry_thumb',
+				'term_thumb' => 'cherry_terms_thumbnails',
 			),
 		);
+
+		/**
+		 * Module directory path.
+		 *
+		 * @since 1.5.0
+		 * @access protected
+		 * @var srting.
+		 */
+		protected $module_path;
 
 		/**
 		 * Utilit class.
@@ -71,7 +78,9 @@ if ( ! class_exists( 'Cherry_Utility' ) ) {
 		 * @since 1.0.0
 		 */
 		public function __construct( $core, $args = array() ) {
-			$this->args = array_merge( $this->args, $args );
+			$this->args        = array_merge( $this->args, $args );
+			$this->module_path = $args['module_path'];
+
 			$this->utility_require( $core );
 		}
 
@@ -91,7 +100,7 @@ if ( ! class_exists( 'Cherry_Utility' ) ) {
 
 				foreach ( $utility as $utilit ) {
 
-					require_once( __DIR__ . '/inc/cherry-' . $utilit . '-utilit.php' );
+					require_once( $this->module_path . '/inc/cherry-' . $utilit . '-utilit.php' );
 
 					$utilit     = str_replace( '-', ' ', $utilit );
 					$class_name = ucwords( $utilit );
@@ -99,7 +108,9 @@ if ( ! class_exists( 'Cherry_Utility' ) ) {
 					$utilit     = str_replace( ' ', '_', $utilit );
 					$class_name = 'Cherry_' . $class_name . '_Utilit';
 
-					$this->utility->$utilit = new $class_name( $this );
+					$instance = new $class_name( $this );
+
+					$this->utility->{$utilit} = $instance;
 				}
 			}
 		}

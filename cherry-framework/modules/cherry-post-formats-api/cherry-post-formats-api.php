@@ -3,7 +3,6 @@
  * API functions for post formats specific content
  * Module Name: Post Formats API
  * Description: API for post formats specific content
- * Version: 1.1.0
  * Author: Cherry Team
  * Author URI: http://www.cherryframework.com/
  * License: GPLv3
@@ -11,9 +10,8 @@
  *
  * @package    Cherry_Framework
  * @subpackage Modules
- * @version    1.1.0
  * @author     Cherry Team <cherryframework@gmail.com>
- * @copyright  Copyright (c) 2012 - 2016, Cherry Team
+ * @copyright  Copyright (c) 2012 - 2017, Cherry Team
  * @link       http://www.cherryframework.com/
  * @license    http://www.gnu.org/licenses/gpl-3.0.html
  */
@@ -31,11 +29,22 @@ if ( ! class_exists( 'Cherry_Post_Formats_Api' ) ) {
 	class Cherry_Post_Formats_Api {
 
 		/**
-		 * Module version
+		 * Core version.
 		 *
+		 * @since 1.5.0
+		 * @access public
 		 * @var string
 		 */
-		public $module_version = '1.1.0';
+		public $core_version = '';
+
+		/**
+		 * Module directory path.
+		 *
+		 * @since 1.5.0
+		 * @access protected
+		 * @var srting.
+		 */
+		protected $module_path;
 
 		/**
 		 * Module slug
@@ -109,6 +118,9 @@ if ( ! class_exists( 'Cherry_Post_Formats_Api' ) ) {
 				'width'  => 600,
 				'height' => 400,
 			) );
+
+			$this->core_version = $core->get_core_version();
+			$this->module_path  = $args['module_path'];
 
 			$formats = array(
 				'image',
@@ -202,7 +214,7 @@ if ( ! class_exists( 'Cherry_Post_Formats_Api' ) ) {
 		 * @return void
 		 */
 		public function includes() {
-			require_once __DIR__ . '/inc/class-cherry-facebook-embed.php';
+			require_once $this->module_path . 'inc/class-cherry-facebook-embed.php';
 
 			// Register Facebook Embed.
 			if ( class_exists( 'Cherry_Facebook_Embed' ) ) {
@@ -219,9 +231,9 @@ if ( ! class_exists( 'Cherry_Post_Formats_Api' ) ) {
 		public function assets() {
 			wp_enqueue_script(
 				'cherry-post-formats',
-				Cherry_Core::base_url( 'assets/js/min/cherry-post-formats.min.js', __FILE__ ),
+				Cherry_Core::base_url( 'assets/js/min/cherry-post-formats.min.js', $this->module_path ),
 				array( 'jquery', 'cherry-js-core' ),
-				$this->module_version,
+				$this->core_version,
 				true
 			);
 		}
@@ -502,7 +514,9 @@ if ( ! class_exists( 'Cherry_Post_Formats_Api' ) ) {
 			 * @since 1.0.0
 			 * @param array existing attributes.
 			 */
-			$img_atts = apply_filters( 'cherry_post_image_attributes', array( 'class' => $css_model['image'] ) );
+			$img_atts = apply_filters( 'cherry_post_image_attributes', array(
+				'class' => $css_model['image'],
+			) );
 
 			if ( has_post_thumbnail( $post_id ) ) {
 
@@ -551,7 +565,9 @@ if ( ! class_exists( 'Cherry_Post_Formats_Api' ) ) {
 				$url = get_permalink( $post_id );
 			}
 
-			$data_atts = array( 'data-cherrypopup' => true );
+			$data_atts = array(
+				'data-cherrypopup' => true,
+			);
 
 			if ( false !== $args['popup_init'] ) {
 				$init                   = json_encode( $args['popup_init'] );
@@ -755,7 +771,7 @@ if ( ! class_exists( 'Cherry_Post_Formats_Api' ) ) {
 
 			if ( ! empty( $atts['include'] ) ) {
 
-				$attachments = explode( ',', str_replace( ' ', '', $atts['include'] ) );
+				$attachments = $this->esc_include_ids( $atts['include'] );
 
 			} elseif ( ! empty( $atts['exclude'] ) ) {
 
@@ -792,7 +808,6 @@ if ( ! class_exists( 'Cherry_Post_Formats_Api' ) ) {
 				return;
 			}
 
-			$atts   = array_merge( $atts, $this->args['gallery_args'] );
 			$result = $this->get_gallery_html( $attachments, $atts );
 
 			return $result;
@@ -855,8 +870,13 @@ if ( ! class_exists( 'Cherry_Post_Formats_Api' ) ) {
 				wp_enqueue_script( $args['popup_handle'] );
 			}
 
-			$slider_data = array( 'data-cherryslider' => true );
-			$popup_data  = array( 'data-cherrypopup' => true );
+			$slider_data = array(
+				'data-cherryslider' => true,
+			);
+
+			$popup_data = array(
+				'data-cherrypopup' => true,
+			);
 
 			if ( false !== $args['slider'] ) {
 				$slider_data['data-slider'] = $args['slider'];
@@ -897,7 +917,9 @@ if ( ! class_exists( 'Cherry_Post_Formats_Api' ) ) {
 				 */
 				$img_atts = apply_filters(
 					'cherry_post_gallery_image_attributes',
-					array( 'class' => $css_model['image'] ),
+					array(
+						'class' => $css_model['image'],
+					),
 					$img
 				);
 
@@ -926,7 +948,9 @@ if ( ! class_exists( 'Cherry_Post_Formats_Api' ) ) {
 						$width = $_wp_additional_image_sizes[ $args['size'] ]['width'];
 					}
 
-					$default_atts = array( 'width' => $width );
+					$default_atts = array(
+						'width' => $width,
+					);
 					$img_atts     = array_merge( $default_atts, $img_atts );
 					$thumb        = sprintf( '<img src="%s" %s>', esc_url( $img ), $this->prepare_atts( $img_atts ) );
 					$url          = $img;
@@ -940,7 +964,9 @@ if ( ! class_exists( 'Cherry_Post_Formats_Api' ) ) {
 				}
 
 				$slide_atts = $this->prepare_atts(
-					array_merge( array( 'class' => $css_model['link'] . $nth_class ), $popup_data )
+					array_merge( array(
+						'class' => $css_model['link'] . $nth_class,
+					), $popup_data )
 				);
 
 				$slide_content = sprintf( $format, $image, $caption, $url, $slide_atts );
@@ -958,6 +984,23 @@ if ( ! class_exists( 'Cherry_Post_Formats_Api' ) ) {
 			);
 
 			return $result;
+		}
+
+		/**
+		 * Include IDs set (array or string).
+		 *
+		 * @since  1.1.2
+		 * @param  mixed $ids ID's set.
+		 * @return array
+		 */
+		public function esc_include_ids( $ids ) {
+
+			if ( is_array( $ids ) ) {
+				return $ids;
+			} else {
+				return explode( ',', str_replace( ' ', '', $ids ) );
+			}
+
 		}
 
 		/**
@@ -1020,8 +1063,7 @@ if ( ! class_exists( 'Cherry_Post_Formats_Api' ) ) {
 				$image_src = preg_replace( '/^(.+)(-\d+x\d+)(\..+)$/', '$1$3', $image_src );
 
 				// Try to get current image ID.
-				$query = "SELECT ID FROM {$wpdb->posts} WHERE guid='$image_src'";
-				$id = $wpdb->get_var( $query );
+				$id = $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE guid = %s", $image_src ) );
 
 				if ( ! $id ) {
 					$result[] = $image_src;

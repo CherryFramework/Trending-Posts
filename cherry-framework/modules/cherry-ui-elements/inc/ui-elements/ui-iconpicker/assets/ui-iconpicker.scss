@@ -1,26 +1,43 @@
 @import "ui-kit/variables";
 @import "ui-kit/mixins";
+@import "../../../../assets/sass/lock";
+
+.cherry-ui-elements-lock{
+	opacity: 0.5;
+	cursor: no-drop;
+	pointer-events: none;
+	filter: grayscale( 100% );
+}
 
 .cherry-ui-iconpicker-group {
-	max-width: 230px;
 	position: relative;
+	.full &{
+		max-width: 100%;
+	}
+	.fixed &{
+		max-width: 150px;
+	}
 	.input-group-addon {
 		position: absolute;
-		width: 36px;
-		height: 36px;
+		width: 20px;
+		height: 20px;
 		left: 0px;
 		top: 0px;
 		background: $grey_color_3;
 		font-size: 14px;
-		line-height: 36px;
+		line-height: 20px;
 		text-align: center;
 		border-radius: 3px 0 0 3px;
 		border-right: 1px solid #dddcdc;
-		margin: 7px;
+		margin: 3px;
+
+		.fa {
+			line-height: 20px;
+		}
 	}
 	.cherry-ui-text{
 		@include input();
-		padding-left: 60px;
+		padding: 0px 0px 0px 30px;
 	}
 }
 
@@ -122,8 +139,6 @@
 	margin-left: 10px;
 }
 .iconpicker-popover .popover-footer input[type=search].iconpicker-search {
-	/*width:auto;
-	    float:left;*/
 	margin-bottom: 14px;
 }
 .iconpicker-popover.popover > .arrow,
@@ -305,12 +320,9 @@
 	font-size: 18px;
 	color: #444;
 	box-shadow: 0 0 0 1px #dddddd;
-	/*&:nth-child(4n+4) {
-	        margin-right: 0;
-	    }
-	    &:nth-last-child(-n+4) {
-	        margin-bottom: 0;
-	    }*/
+	.fa {
+		line-height: 28px;
+	}
 }
 .iconpicker .iconpicker-item:hover:not(.iconpicker-selected) {
 	background-color: #eeeeee;

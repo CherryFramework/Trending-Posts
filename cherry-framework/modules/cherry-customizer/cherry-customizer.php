@@ -2,7 +2,6 @@
 /**
  * Module Name: Customizer
  * Description: Customizer functionality.
- * Version: 1.1.3
  * Author: Cherry Team
  * Author URI: http://www.cherryframework.com/
  * License: GPLv3
@@ -10,7 +9,6 @@
  *
  * @package    Cherry_Framework
  * @subpackage Modules
- * @version    1.1.3
  * @author     Cherry Team <cherryframework@gmail.com>
  * @copyright  Copyright (c) 2012 - 2016, Cherry Team
  * @link       http://www.cherryframework.com/
@@ -31,15 +29,6 @@ if ( ! class_exists( 'Cherry_Customizer' ) ) {
 	 * @since 1.0.1 Removed `module_dir` and `module_uri` properties.
 	 */
 	class Cherry_Customizer {
-
-		/**
-		 * The version of this module.
-		 *
-		 * @since 1.0.0
-		 * @access protected
-		 * @var string
-		 */
-		protected $version;
 
 		/**
 		 * Unique prefix.
@@ -106,6 +95,15 @@ if ( ! class_exists( 'Cherry_Customizer' ) ) {
 		protected $fonts;
 
 		/**
+		 * Module directory path.
+		 *
+		 * @since 1.5.0
+		 * @access protected
+		 * @var srting.
+		 */
+		protected $module_path;
+
+		/**
 		 * Module initialization.
 		 *
 		 * @since 1.0.0
@@ -115,9 +113,10 @@ if ( ! class_exists( 'Cherry_Customizer' ) ) {
 
 		/*
 		 * $args = array(
+		 *      'just_fonts' => false, // set to TRUE if you want use customizer only as fonts manager.
 		 *      'prefix'     => 'unique_prefix', // theme or plugin slug (*).
 		 *      'capability' => 'edit_theme_options', // (default: `edit_theme_options`).
-		 *      'type'       => 'theme_mod', // `theme_mod` - for themes; `option` - for plugins (default: `theme_mod`).
+		 *      'type'       => 'theme_mod', // `theme_mod` - for themes; `option` - for plugins (default: `theme_mod`)
 		 *      'options'    => array(
 		 *          'unique_panel_ID' => array(
 		 *              'title'           => esc_html__( 'Panel Title', 'text-domain' ),
@@ -140,7 +139,8 @@ if ( ! class_exists( 'Cherry_Customizer' ) ) {
 		 *              'description' => esc_html__( 'Control Description', 'text-domain' ),
 		 *              'section'     => 'unique_section_ID', (*)
 		 *              'default'     => '',
-		 *              'field'       => 'text', // text, textarea, checkbox, radio, select, fonts, hex_color, image, file.
+		 *              'field'       => 'text',  // text, textarea, checkbox, radio, select,
+		 *                                        // iconpicker, fonts, hex_color, image, file.
 		 *              'choices'     => array(), // for `select` and `radio` field.
 		 *              'type'        => 'control', (*)
 		 *              'active_callback'      => '', (optional: is_front_page, is_single)
@@ -151,14 +151,35 @@ if ( ! class_exists( 'Cherry_Customizer' ) ) {
 		 *      )
 		 * );
 		 */
+
 		/**
 		 * Cherry customizer class construct.
 		 */
 		public function __construct( $core, $args ) {
+
 			/**
 			 * Cherry Customizer only works in WordPress 4.0 or later.
 			 */
 			if ( version_compare( $GLOBALS['wp_version'], '4.0', '<' ) ) {
+				return;
+			}
+
+			$this->core        = $core;
+			$this->fonts       = array();
+			$this->module_path = $args['module_path'];
+
+			// Prepare fonts data.
+			add_action( 'after_switch_theme', array( $this, 'init_fonts' ),  10 );
+			add_action( 'after_switch_theme', array( $this, 'add_options' ), 11 );
+
+			// Clear fonts data.
+			add_action( 'switch_theme', array( $this, 'clear_fonts' ) );
+			add_action( 'upgrader_process_complete', array( $this, 'fire_clear_fonts' ), 10, 2 );
+
+			/**
+			 * Fonts are loaded, abort if $args['just_fonts'] set to TRUE
+			 */
+			if ( isset( $args['just_fonts'] ) && true === $args['just_fonts'] ) {
 				return;
 			}
 
@@ -170,22 +191,11 @@ if ( ! class_exists( 'Cherry_Customizer' ) ) {
 
 			$this->prefix     = $this->prepare_prefix( $args['prefix'] );
 			$this->capability = ! empty( $args['capability'] ) ? $args['capability'] : 'edit_theme_options';
-			$this->type       = ! empty( $args['type'] ) && $this->sanitize_type( $args['type'] )
-								? $args['type'] : 'theme_mod';
+			$this->type       = ! empty( $args['type'] ) && $this->sanitize_type( $args['type'] ) ? $args['type'] : 'theme_mod';
 			$this->options    = $args['options'];
-			$this->core       = $core;
-			$this->fonts      = array();
-			$this->version    = '1.1.0';
+
 
 			add_action( 'customize_register', array( $this, 'register' ) );
-
-			// Prepare fonts data.
-			add_action( 'after_switch_theme', array( $this, 'init_fonts' ),  10 );
-			add_action( 'after_switch_theme', array( $this, 'add_options' ), 11 );
-
-			// Clear fonts data.
-			add_action( 'switch_theme', array( $this, 'clear_fonts' ) );
-			add_action( 'upgrader_process_complete', array( $this, 'fire_clear_fonts' ), 10, 2 );
 
 			add_filter( 'cherry_customizer_get_core', array( $this, 'pass_core_into_control' ) );
 
@@ -211,7 +221,7 @@ if ( ! class_exists( 'Cherry_Customizer' ) ) {
 		private function include_custom_controls() {
 
 			if ( ! class_exists( 'Cherry_WP_Customize_Iconpicker' ) ) {
-				require_once( trailingslashit( __DIR__ ) . '/inc/class-cherry-wp-customize-iconpicker.php' );
+				require_once( $this->module_path . 'inc/class-cherry-wp-customize-iconpicker.php' );
 			}
 
 		}
@@ -262,7 +272,7 @@ if ( ! class_exists( 'Cherry_Customizer' ) ) {
 			$prefix          = $this->prefix . '_';
 			$priority        = isset( $args['priority'] )        ? $args['priority'] : 160;
 			$theme_supports  = isset( $args['theme_supports'] )  ? $args['theme_supports'] : '';
-			$title           = isset( $args['title'] )           ? esc_attr( $args['title'] ) : 'Untitled Panel';
+			$title           = isset( $args['title'] )           ? esc_attr( $args['title'] ) : esc_html__( 'Untitled Panel', 'cherry-framework' );
 			$description     = isset( $args['description'] )     ? esc_attr( $args['description'] ) : '';
 			$active_callback = isset( $args['active_callback'] ) ? $this->active_callback( $args['active_callback'] ) : '';
 
@@ -298,7 +308,7 @@ if ( ! class_exists( 'Cherry_Customizer' ) ) {
 		 */
 		public function add_section( $id, $args ) {
 			$prefix          = $this->prefix . '_';
-			$title           = isset( $args['title'] )           ? esc_attr( $args['title'] ) : 'Untitled Section';
+			$title           = isset( $args['title'] )           ? esc_attr( $args['title'] ) : esc_html__( 'Untitled Section', 'cherry-framework' );
 			$description     = isset( $args['description'] )     ? esc_attr( $args['description'] ) : '';
 			$panel           = isset( $args['panel'] )           ? $prefix . esc_attr( $args['panel'] ) : '';
 			$priority        = isset( $args['priority'] )        ? $args['priority'] : 160;
@@ -320,6 +330,7 @@ if ( ! class_exists( 'Cherry_Customizer' ) ) {
 		 * Add a customize control.
 		 *
 		 * @since 1.0.0
+		 * @since 1.1.8 Added a `dropdown-pages` support.
 		 * @param numder $id Settings ID.
 		 * @param array  $args Control arguments.
 		 */
@@ -331,7 +342,7 @@ if ( ! class_exists( 'Cherry_Customizer' ) ) {
 			$id          = ( 'option' === $this->type )  ? sprintf( '%1$s_options[%2$s]', $this->prefix, esc_attr( $id ) ) : esc_attr( $id );
 			$priority    = isset( $args['priority'] )    ? $args['priority'] : ++$control_priority;
 			$default     = isset( $args['default'] )     ? $args['default'] : '';
-			$title       = isset( $args['title'] )       ? esc_attr( $args['title'] ) : 'Untitled Control';
+			$title       = isset( $args['title'] )       ? esc_attr( $args['title'] ) : esc_html__( 'Untitled Control', 'cherry-framework' );
 			$description = isset( $args['description'] ) ? esc_attr( $args['description'] ) : '';
 			$transport   = isset( $args['transport'] )   ? esc_attr( $args['transport'] ) : 'refresh';
 			$field_type  = isset( $args['field'] )       ? esc_attr( $args['field'] ) : 'text';
@@ -370,28 +381,43 @@ if ( ! class_exists( 'Cherry_Customizer' ) ) {
 				case 'url':
 				case 'password':
 				case 'checkbox':
-						$control_args = wp_parse_args( array( 'type' => $field_type ), $control_args );
+				case 'dropdown-pages':
+						$control_args = wp_parse_args( array(
+							'type' => $field_type,
+						), $control_args );
 					break;
 
 				case 'range':
 				case 'number':
 						$input_attrs  = ( isset( $args['input_attrs'] ) ) ? $args['input_attrs'] : array();
-						$control_args = wp_parse_args( array( 'type' => $field_type, 'input_attrs' => $input_attrs ), $control_args );
+						$control_args = wp_parse_args( array(
+							'type'        => $field_type,
+							'input_attrs' => $input_attrs,
+						), $control_args );
 					break;
 
 				case 'select':
 						$choices      = ( isset( $args['choices'] ) ) ? $args['choices'] : array();
-						$control_args = wp_parse_args( array( 'type' => 'select', 'choices' => $choices ), $control_args );
+						$control_args = wp_parse_args( array(
+							'type'    => 'select',
+							'choices' => $choices,
+						), $control_args );
 					break;
 
 				case 'fonts':
 						$choices      = ( isset( $args['choices'] ) ) ? $args['choices'] : $this->get_fonts();
-						$control_args = wp_parse_args( array( 'type' => 'select', 'choices' => $choices ), $control_args );
+						$control_args = wp_parse_args( array(
+							'type'    => 'select',
+							'choices' => $choices,
+						), $control_args );
 					break;
 
 				case 'radio':
 						$choices      = ( isset( $args['choices'] ) ) ? $args['choices'] : array();
-						$control_args = wp_parse_args( array( 'type' => 'radio', 'choices' => $choices ), $control_args );
+						$control_args = wp_parse_args( array(
+							'type'    => 'radio',
+							'choices' => $choices,
+						), $control_args );
 					break;
 
 				case 'hex_color':
@@ -405,11 +431,20 @@ if ( ! class_exists( 'Cherry_Customizer' ) ) {
 				case 'file':
 						$control_class = 'WP_Customize_Upload_Control';
 					break;
+
 				case 'iconpicker':
 						$control_class = 'Cherry_WP_Customize_Iconpicker';
 						$icon_data     = ( isset( $args['icon_data'] ) ) ? $args['icon_data'] : array();
-						$control_args  = wp_parse_args( array( 'icon_data' => $icon_data ), $control_args );
+						$auto_parse    = ( isset( $args['auto_parse'] ) ) ? $args['auto_parse'] : array();
+						$control_args  = wp_parse_args(
+							array(
+								'icon_data'  => $icon_data,
+								'auto_parse' => $auto_parse,
+							),
+							$control_args
+						);
 					break;
+
 				default:
 						/**
 						 * Filter arguments for a `$field_type` customize control.
@@ -501,16 +536,6 @@ if ( ! class_exists( 'Cherry_Customizer' ) ) {
 		 */
 		public function set_customize( $customize ) {
 			$this->customize = $customize;
-		}
-
-		/**
-		 * Retrieve the version number.
-		 *
-		 * @since  1.0.0
-		 * @return string The version number of the module.
-		 */
-		public function get_version() {
-			return $this->version;
 		}
 
 		/**
@@ -791,6 +816,8 @@ if ( ! class_exists( 'Cherry_Customizer' ) ) {
 			// Get step.
 			$step = ( isset( $atts['step'] ) ? $atts['step'] : 1 );
 
+			$number = ( ! isset( $atts['min'] ) && 0 > $number ) ? $setting->default : $number ;
+
 			if ( is_float( $step ) ) {
 
 				// Ensure input is a float value.
@@ -799,7 +826,7 @@ if ( ! class_exists( 'Cherry_Customizer' ) ) {
 			} else {
 
 				// Ensure input is an absolute integer.
-				$number  = absint( $number );
+				$number  = ( isset( $atts['min'] ) && 0 > $atts['min'] && 0 > $number ) ? intval( $number ) : absint( $number );
 				$checker = is_int( $number / $step );
 			}
 
@@ -861,6 +888,13 @@ if ( ! class_exists( 'Cherry_Customizer' ) ) {
 		 * @since 1.0.0
 		 */
 		public function init_fonts() {
+
+			$inited = get_option( 'cherry_customiser_fonts_inited' );
+
+			if ( $inited ) {
+				return;
+			}
+
 			$fonts_data = $this->get_fonts_data();
 			$fonts_data = (array) $fonts_data;
 
@@ -868,6 +902,8 @@ if ( ! class_exists( 'Cherry_Customizer' ) ) {
 				$data = $this->read_font_file( $file );
 				add_option( 'cherry_customiser_fonts_' . $type, $data );
 			}
+
+			add_option( 'cherry_customiser_fonts_inited', true );
 		}
 
 		/**
@@ -909,8 +945,8 @@ if ( ! class_exists( 'Cherry_Customizer' ) ) {
 			 * @param object $this Cherry_Customiser instance.
 			 */
 			return apply_filters( 'cherry_customizer_get_fonts_data', array(
-				'standard' => __DIR__ . '/assets/fonts/standard.json',
-				'google'   => __DIR__ . '/assets/fonts/google.json',
+				'standard' => $this->module_path . 'assets/fonts/standard.json',
+				'google'   => $this->module_path . 'assets/fonts/google.json',
 			), $this );
 		}
 
@@ -918,7 +954,7 @@ if ( ! class_exists( 'Cherry_Customizer' ) ) {
 		 * Retrieve array with font-family (for select element).
 		 *
 		 * @since  1.0.0
-		 * @param  [string] $type Font type.
+		 * @param  string $type Font type.
 		 * @return array
 		 */
 		public function get_fonts( $type = '' ) {
@@ -940,25 +976,17 @@ if ( ! class_exists( 'Cherry_Customizer' ) ) {
 		 * Retrieve a data from font's file.
 		 *
 		 * @since  1.0.0
-		 * @global object $wp_filesystem
-		 * @param  [string] $file          File path.
+		 * @param  string $file          File path.
 		 * @return array        Fonts data.
 		 */
 		public function read_font_file( $file ) {
 
-			if ( ! function_exists( 'WP_Filesystem' ) ) {
-				include_once( ABSPATH . '/wp-admin/includes/file.php' );
-			}
-
-			WP_Filesystem();
-			global $wp_filesystem;
-
-			if ( ! $wp_filesystem->exists( $file ) ) {
+			if ( ! $this->file_exists( $file ) ) {
 				return false;
 			}
 
 			// Read the file.
-			$json = $wp_filesystem->get_contents( $file );
+			$json = $this->get_file( $file );
 
 			if ( ! $json ) {
 				return new WP_Error( 'reading_error', 'Error when reading file' );
@@ -966,7 +994,32 @@ if ( ! class_exists( 'Cherry_Customizer' ) ) {
 
 			$content = json_decode( $json, true );
 
-			return is_array( $content ) ? $content['items'] : false;
+			return $content['items'];
+		}
+
+		/**
+		 * Safely checks exists file or not.
+		 *
+		 * @since  1.1.4
+		 * @global object $wp_filesystem
+		 * @param  string $file File path.
+		 * @return bool
+		 */
+		public function file_exists( $file ) {
+			return file_exists( $file );
+		}
+
+		/**
+		 * Safely get file content.
+		 *
+		 * @since  1.1.4
+		 * @global object $wp_filesystem
+		 * @param  string $file File path.
+		 * @return bool
+		 */
+		public function get_file( $file ) {
+			$result = Cherry_Toolkit::get_file( $file );
+			return $result;
 		}
 
 		/**
@@ -987,7 +1040,9 @@ if ( ! class_exists( 'Cherry_Customizer' ) ) {
 		}
 
 		/**
-		 * Function _build_keys
+		 * Function _build_keys.
+		 *
+		 * @since 1.0.0
 		 */
 		public function _build_keys( $item ) {
 
@@ -999,7 +1054,9 @@ if ( ! class_exists( 'Cherry_Customizer' ) ) {
 		}
 
 		/**
-		 * Function _build_values
+		 * Function _build_values.
+		 *
+		 * @since 1.0.0
 		 */
 		public function _build_values( $item ) {
 
@@ -1012,6 +1069,8 @@ if ( ! class_exists( 'Cherry_Customizer' ) ) {
 
 		/**
 		 * Function add_options
+		 *
+		 * @since 1.0.0
 		 */
 		public function add_options() {
 
@@ -1062,6 +1121,8 @@ if ( ! class_exists( 'Cherry_Customizer' ) ) {
 				delete_option( 'cherry_customiser_fonts_' . $type );
 			}
 
+			delete_option( 'cherry_customiser_fonts_inited' );
+
 			$this->fonts = array();
 		}
 
@@ -1069,7 +1130,7 @@ if ( ! class_exists( 'Cherry_Customizer' ) ) {
 		 * Handler for custom `active_callback` feature.
 		 *
 		 * @since  1.0.0
-		 * @param  [string] $callback Callback-function.
+		 * @param  string $callback Callback-function.
 		 * @return mixed
 		 */
 		public function active_callback( $callback ) {

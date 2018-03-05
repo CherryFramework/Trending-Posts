@@ -7,7 +7,7 @@
  * @author     Cherry Team <support@cherryframework.com>
  * @copyright  Copyright (c) 2012 - 2015, Cherry Team
  * @link       http://www.cherryframework.com/
- * @license    http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
+ * @license    http://www.gnu.org/licenses/gpl-3.0.en.html
  */
 
 // If this file is called directly, abort.
@@ -39,25 +39,26 @@ if ( ! class_exists( 'Cherry_Attributes_Utilit' ) ) {
 			}
 
 			$default_args = array(
-				'visible'		=> true,
-				'length'		=> 9999,
-				'trimmed_type'	=> 'word',
-				'ending'		=> '&hellip;',
-				'html'			=> '<h3 %1$s><a href="%2$s" %3$s rel="bookmark">%4$s</a></h3>',
-				'class'			=> '',
-				'title'			=> '',
-				'echo'			=> false,
+				'visible'      => true,
+				'length'       => -1,
+				'trimmed_type' => 'word',
+				'ending'       => '&hellip;',
+				'html'         => '<h3 %1$s><a href="%2$s" %3$s rel="bookmark">%4$s</a></h3>',
+				'class'        => '',
+				'title'        => '',
+				'echo'         => false,
 			);
 			$args = wp_parse_args( $args, $default_args );
 			$html = '' ;
 
 			if ( filter_var( $args['visible'], FILTER_VALIDATE_BOOLEAN ) && 0 !== $args['length'] ) {
-				$title = $title_cut = ( 'post' === $type ) ? $object->post_title : $object->name ;
-				$title = ( $args['title'] ) ? 'title="' . $args['title'] . '"' : 'title="' . $title . '"' ;
+				$title     = ( 'post' === $type ) ? $object->post_title : $object->name;
+				$title_cut = $title;
 
+				$title     = ( $args['title'] ) ? 'title="' . $args['title'] . '"' : 'title="' . $title . '"';
 				$title_cut = $this->cut_text( $title_cut, $args['length'], $args['trimmed_type'], $args['ending'] );
 
-				$link = ( 'post' === $type ) ? $this->get_post_permalink() : $this->get_term_permalink( $object->term_id );
+				$link       = ( 'post' === $type ) ? $this->get_post_permalink() : $this->get_term_permalink( $object->term_id );
 				$html_class = ( $args['class'] ) ? 'class="' . $args['class'] . '"' : '' ;
 
 				$html = sprintf( $args['html'], $html_class, $link, $title, $title_cut );
@@ -83,28 +84,29 @@ if ( ! class_exists( 'Cherry_Attributes_Utilit' ) ) {
 			}
 
 			$default_args = array(
-				'visible'		=> true,
-				'content_type'	=> 'post_content',
-				'length'		=> 0,
-				'trimmed_type'	=> 'word',
-				'ending'		=> '&hellip;',
-				'html'			=> '<p %1$s>%2$s</p>',
-				'class'			=> '',
-				'echo'			=> false,
+				'visible'      => true,
+				'content_type' => 'post_content',
+				'length'       => -1,
+				'trimmed_type' => 'word',
+				'ending'       => '&hellip;',
+				'html'         => '<p %1$s>%2$s</p>',
+				'class'        => '',
+				'echo'         => false,
 			);
 			$args = wp_parse_args( $args, $default_args );
 			$html = '' ;
+			$content_type = $args['content_type'];
 
 			if ( filter_var( $args['visible'], FILTER_VALIDATE_BOOLEAN ) ) {
 				if ( 'term' === $type ) {
 					$text = $object->description;
-				} elseif ( 'post_content' === $args['content_type'] || 'post_excerpt' === $args['content_type'] && ! $object->$args['content_type'] ) {
+				} elseif ( 'post_content' === $content_type || 'post_excerpt' === $content_type && empty( $object->$content_type ) ) {
 					$text = get_the_content();
 				} else {
 					$text = get_the_excerpt();
 				}
 
-				$text = $this->cut_text( $text, $args['length'], $args['trimmed_type'], $args['ending'] );
+				$text = $this->cut_text( $text, $args['length'], $args['trimmed_type'], $args['ending'], true );
 
 				if ( $text ) {
 					$html_class = ( $args['class'] ) ? 'class="' . $args['class'] . '"' : '' ;
@@ -135,13 +137,13 @@ if ( ! class_exists( 'Cherry_Attributes_Utilit' ) ) {
 			}
 
 			$default_args = array(
-				'visible'	=> true,
-				'text'		=> '',
-				'icon'		=> '',
-				'html'		=> '<a href="%1$s" %2$s %3$s><span class="btn__text">%4$s</span>%5$s</a>',
-				'class'		=> 'btn',
-				'title'		=> '',
-				'echo'		=> false,
+				'visible' => true,
+				'text'    => '',
+				'icon'    => '',
+				'html'    => '<a href="%1$s" %2$s %3$s><span class="btn__text">%4$s</span>%5$s</a>',
+				'class'   => 'btn',
+				'title'   => '',
+				'echo'    => false,
 			);
 			$args = wp_parse_args( $args, $default_args );
 			$html = '' ;

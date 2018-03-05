@@ -2,7 +2,6 @@
 /**
  * Module Name: UI Elements
  * Description: Class for the building ui elements
- * Version: 1.1.3
  * Author: Cherry Team
  * Author URI: http://www.cherryframework.com/
  * License: GPLv3
@@ -10,9 +9,8 @@
  *
  * @package    Cherry_Framework
  * @subpackage Modules
- * @version    1.1.3
  * @author     Cherry Team <cherryframework@gmail.com>
- * @copyright  Copyright (c) 2012 - 2016, Cherry Team
+ * @copyright  Copyright (c) 2012 - 2017, Cherry Team
  * @link       http://www.cherryframework.com/
  * @license    http://www.gnu.org/licenses/gpl-3.0.html
  */
@@ -52,8 +50,28 @@ if ( ! class_exists( 'Cherry_UI_Elements' ) ) {
 				'slider',
 				'repeater',
 				'iconpicker',
+				'button',
+				'dimensions',
 			),
 		);
+
+		/**
+		 * Core version.
+		 *
+		 * @since 1.5.0
+		 * @access public
+		 * @var string
+		 */
+		public static $core_version = '';
+
+		/**
+		 * Module directory path.
+		 *
+		 * @since 1.5.0
+		 * @access protected
+		 * @var srting.
+		 */
+		public static $module_path;
 
 		/**
 		 * Constructor.
@@ -63,7 +81,10 @@ if ( ! class_exists( 'Cherry_UI_Elements' ) ) {
 		 * @param array  $args Arguments.
 		 */
 		public function __construct( $core, $args ) {
-			$this->args = array_merge( $this->args, $args );
+			$this->args         = array_merge( $this->args, $args );
+			self::$core_version = $core->get_core_version();
+			self::$module_path  = $args['module_path'];
+
 			$this->ui_elements_require();
 
 			// Load admin assets.
@@ -110,16 +131,15 @@ if ( ! class_exists( 'Cherry_UI_Elements' ) ) {
 
 			// Add I_UI interface.
 			if ( ! interface_exists( 'I_UI' ) ) {
-				require_once( __DIR__ . '/i-ui.php' );
+				require_once( self::$module_path . 'i-ui.php' );
 			}
 
-			if ( ! class_exists( 'UI_Element' ) ) {
-				require_once( __DIR__ . '/ui-element.php' );
-			}
+			require_once( self::$module_path. 'ui-element.php' );
+			require_once( self::$module_path . 'inc/class-cherry-lock-element.php' );
 
 			if ( ! empty( $this->args['ui_elements'] ) ) {
 				foreach ( $this->args['ui_elements'] as $ui_element ) {
-					require_once( __DIR__ . '/inc/ui-elements/ui-' . $ui_element . '/ui-' . $ui_element . '.php' );
+					require_once( self::$module_path . 'inc/ui-elements/ui-' . $ui_element . '/ui-' . $ui_element . '.php' );
 				}
 			}
 		}
@@ -134,7 +154,6 @@ if ( ! class_exists( 'Cherry_UI_Elements' ) ) {
 				foreach ( $this->args['ui_elements'] as $ui_element ) {
 					$ui_class_name = 'UI_' . ucwords( $ui_element );
 					call_user_func( array( $ui_class_name, 'enqueue_assets' ) );
-
 				}
 			}
 		}

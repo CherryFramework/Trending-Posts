@@ -7,7 +7,7 @@
  * @author     Cherry Team <support@cherryframework.com>
  * @copyright  Copyright (c) 2012 - 2015, Cherry Team
  * @link       http://www.cherryframework.com/
- * @license    http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
+ * @license    http://www.gnu.org/licenses/gpl-3.0.en.html
  */
 
 // If this file is called directly, abort.
@@ -37,28 +37,31 @@ if ( ! class_exists( 'Cherry_Media_Utilit' ) ) {
 			}
 
 			$default_args = array(
-				'visible'					=> true,
-				'size'						=> apply_filters( 'cherry_normal_image_size', 'post-thumbnail' ),
-				'mobile_size'				=> apply_filters( 'cherry_mobile_image_size', 'post-thumbnail' ),
-				'html'						=> '<a href="%1$s" %2$s ><img src="%3$s" alt="%4$s" %5$s ></a>',
-				'class'						=> 'wp-image',
-				'placeholder'				=> true,
-				'placeholder_background'	=> '000',
-				'placeholder_foreground'	=> 'fff',
-				'placeholder_title'			=> '',
-				'html_tag_suze'				=> true,
-				'echo'						=> false,
+				'visible'                => true,
+				'size'                   => apply_filters( 'cherry_normal_image_size', 'post-thumbnail' ),
+				'mobile_size'            => apply_filters( 'cherry_mobile_image_size', 'post-thumbnail' ),
+				'html'                   => '<a href="%1$s" %2$s ><img src="%3$s" alt="%4$s" %5$s ></a>',
+				'class'                  => 'wp-image',
+				'placeholder'            => true,
+				'placeholder_background' => '000',
+				'placeholder_foreground' => 'fff',
+				'placeholder_title'      => '',
+				'html_tag_suze'          => true,
+				'echo'                   => false,
 			);
 			$args = wp_parse_args( $args, $default_args );
 			$html = '';
 
 			if ( filter_var( $args['visible'], FILTER_VALIDATE_BOOLEAN ) ) {
 
-				$size = wp_is_mobile() ? $args['mobile_size'] : $args['size'];
-				$size = in_array( $size, get_intermediate_image_sizes() ) ? $size : 'post-thumbnail';
+				$intermediate_image_sizes   = get_intermediate_image_sizes();
+				$intermediate_image_sizes[] = 'full';
 
-				// Place holder defaults attr
-				$size_array	= $this->get_thumbnail_size_array( $size );
+				$size = wp_is_mobile() ? $args['mobile_size'] : $args['size'];
+				$size = in_array( $size, $intermediate_image_sizes ) ? $size : 'post-thumbnail';
+
+				// Placeholder defaults attr.
+				$size_array = $this->get_thumbnail_size_array( $size );
 
 				switch ( $type ) {
 					case 'post':
@@ -77,43 +80,84 @@ if ( ! class_exists( 'Cherry_Media_Utilit' ) ) {
 
 					case 'attachment':
 						$thumbnail_id = $id;
-						$alt = get_the_title( $thumbnail_id );
-						$link = wp_get_attachment_image_url( $thumbnail_id, $size );
+						$alt          = get_the_title( $thumbnail_id );
+						$link         = wp_get_attachment_image_url( $thumbnail_id, $size );
 					break;
 				}
 
 				if ( $thumbnail_id ) {
 					$image_data = wp_get_attachment_image_src( $thumbnail_id, $size );
-					$src = $image_data[0];
-					$size_array['width'] = $image_data[1];
+					$src        = $image_data[0];
+
+					$size_array['width']  = $image_data[1];
 					$size_array['height'] = $image_data[2];
+
 				} elseif ( filter_var( $args['placeholder'], FILTER_VALIDATE_BOOLEAN ) ) {
-					$title = ( $args['placeholder_title'] ) ? $args['placeholder_title'] : $size_array['width'] . 'x' . $size_array['height'] ;
+					$title = ( $args['placeholder_title'] ) ? $args['placeholder_title'] : $size_array['width'] . 'x' . $size_array['height'];
 					$attr = array(
-						'width'			=> $size_array['width'],
-						'height'		=> $size_array['height'],
-						'background'	=> $args['placeholder_background'],
-						'foreground'	=> $args['placeholder_foreground'],
-						'title'			=> $title,
+						'width'      => $size_array['width'],
+						'height'     => $size_array['height'],
+						'background' => $args['placeholder_background'],
+						'foreground' => $args['placeholder_foreground'],
+						'title'      => $title,
 					);
 
 					$attr = array_map( 'esc_attr', $attr );
 
-					$width  = ( 4000 < intval( $attr['width'] ) ) ? 4000 : intval( $attr['width'] );
+					$width  = ( 4000 < intval( $attr['width'] ) )  ? 4000 : intval( $attr['width'] );
 					$height = ( 4000 < intval( $attr['height'] ) ) ? 4000 : intval( $attr['height'] );
 
-					$src = 'http://fakeimg.pl/' . $width . 'x' . $height . '/'. $attr['background'] .'/'. $attr['foreground'] . '/?text=' . $attr['title'] . '';
+					$src = $this->get_placeholder_url( array(
+						'width'      => $width,
+						'height'     => $height,
+						'background' => $attr['background'],
+						'foreground' => $attr['foreground'],
+						'title'      => $attr['title'],
+					) );
 				}
 
-				$class			= ( $args['class'] ) ? 'class="' . $args['class'] . '"' : '' ;
-				$html_tag_suze	= ( filter_var( $args['html_tag_suze'], FILTER_VALIDATE_BOOLEAN ) ) ? 'width="' . $size_array['width']  . '" height="' . $size_array['height']  . '"' : '' ;
+				$class         = ( $args['class'] ) ? 'class="' . esc_attr( $args['class'] ) . '"' : '';
+				$html_tag_suze = ( filter_var( $args['html_tag_suze'], FILTER_VALIDATE_BOOLEAN ) ) ? 'width="' . $size_array['width'] . '" height="' . $size_array['height'] . '"' : '';
 
 				if ( isset( $src ) ) {
-					$html = sprintf( $args['html'], $link, $class, $src, $alt, $html_tag_suze );
+					$html = sprintf( $args['html'], esc_url( $link ), $class, esc_url( $src ), esc_attr( $alt ), $html_tag_suze );
 				}
 			}
 
 			return $this->output_method( $html, $args['echo'] );
+		}
+
+		/**
+		 * Get placeholder image URL
+		 *
+		 * @param array $args Image argumnets.
+		 * @return string
+		 */
+		public function get_placeholder_url( $args = array() ) {
+
+			$args = wp_parse_args( $args, array(
+				'width'      => 300,
+				'height'     => 300,
+				'background' => '000',
+				'foreground' => 'fff',
+				'title'      => '',
+			) );
+
+			$args      = array_map( 'urlencode', $args );
+			$base_url  = 'http://fakeimg.pl';
+			$format    = '%1$s/%2$sx%3$s/%4$s/%5$s/?text=%6$s';
+			$image_url = sprintf(
+				$format,
+				$base_url, $args['width'], $args['height'], $args['background'], $args['foreground'], $args['title']
+			);
+
+			/**
+			 * Filter image placeholder URL
+			 *
+			 * @param string $image_url Default URL.
+			 * @param string $args      Image arguments.
+			 */
+			return apply_filters( 'cherry_utility_placeholder_image_url', esc_url( $image_url ), $args );
 		}
 
 
@@ -152,7 +196,9 @@ if ( ! class_exists( 'Cherry_Media_Utilit' ) ) {
 				return '';
 			}
 
-			$html = wp_oembed_get( $url_array[0], array( 'width' => $size_array['width'] ) );
+			$html = wp_oembed_get( $url_array[0], array(
+				'width' => $size_array['width'],
+			) );
 
 			if ( ! $html ) {
 				$url_array = $this->sorted_array( $url_array );

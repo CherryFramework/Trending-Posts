@@ -2,7 +2,6 @@
 /**
  * Module Name: Breadcrumb Trail
  * Description: A breadcrumb menu script for WordPress
- * Version: 1.1.0
  * Author: Cherry Team
  * Author URI: http://www.cherryframework.com/
  * License: GPLv3
@@ -35,17 +34,9 @@ if ( ! class_exists( 'Cherry_Breadcrumbs' ) ) {
 	 * Breadcrumbs builder class.
 	 * Class is based on Breadcrumb Trail plugin by Justin Tadlock.
 	 *
-	 * @since 4.0.0
+	 * @since 1.0.0
 	 */
 	class Cherry_Breadcrumbs {
-
-		/**
-		 * Module version.
-		 *
-		 * @since 1.0.0
-		 * @var   string
-		 */
-		public $module_version = '1.1.0';
 
 		/**
 		 * A reference to an instance of this class.
@@ -215,7 +206,7 @@ if ( ! class_exists( 'Cherry_Breadcrumbs' ) ) {
 			$wrapper_css     = implode( ' ', $wrapper_classes );
 
 			/* Open the breadcrumb trail containers. */
-			$result = "\n\t\t" . '<div class="' . $wrapper_css . '">';
+			$result = "\n\t\t" . '<div class="' . esc_attr( $wrapper_css ) . '">';
 
 			$result .= sprintf( $this->args['wrapper_format'], $title, $breadcrumb );
 
@@ -342,29 +333,16 @@ if ( ! class_exists( 'Cherry_Breadcrumbs' ) ) {
 		 * @since 1.0.0
 		 */
 		public function default_labels() {
-			$page_on_front_id = get_option( 'page_on_front' );
-			$use_custom_front_title = 'true';
-			$use_custom_front_title = ( 'true' == $use_custom_front_title ) ? true : false;
-
-			if ( $page_on_front_id ) {
-				$page_on_front_title = get_the_title( $page_on_front_id );
-			}
-
-			if ( $use_custom_front_title ) {
-				$default = 'Home';
-				$page_on_front_title = $default;
-				$page_on_front_title = $this->prepare_label( $page_on_front_title, $default );
-			}
 
 			$labels = array(
-				'browse'              => 'Browse:',
-				'home'                => $page_on_front_title,
-				'error_404'           => '404 Not Found',
-				'archives'            => 'Archives',
-				'search'              => 'Search results for &#8220;%s&#8221;',
-				'paged'               => 'Page %s',
-				'archive_minute'      => 'Minute %s',
-				'archive_week'        => 'Week %s',
+				'browse'              => esc_html__( 'Browse:', 'cherry-framework' ),
+				'home'                => $this->home_title(),
+				'error_404'           => esc_html__( '404 Not Found', 'cherry-framework' ),
+				'archives'            => esc_html__( 'Archives', 'cherry-framework' ),
+				'search'              => esc_html__( 'Search results for &#8220;%s&#8221;', 'cherry-framework' ),
+				'paged'               => esc_html__( 'Page %s', 'cherry-framework' ),
+				'archive_minute'      => esc_html__( 'Minute %s', 'cherry-framework' ),
+				'archive_week'        => esc_html__( 'Week %s', 'cherry-framework' ),
 
 				/* "%s" is replaced with the translated date/time format. */
 				'archive_minute_hour' => '%s',
@@ -375,6 +353,33 @@ if ( ! class_exists( 'Cherry_Breadcrumbs' ) ) {
 			);
 
 			return $labels;
+		}
+
+		/**
+		 * Returns home title
+		 *
+		 * @return string
+		 */
+		public function home_title() {
+
+			$title            = esc_html__( 'Home', 'cherry-framework' );
+			$use_custom_title = apply_filters( 'cherry_breadcrumbs_custom_home_title', true );
+
+			if ( $use_custom_title ) {
+
+				$page_on_front_id = get_option( 'page_on_front' );
+				$page_title       = false;
+
+				if ( $page_on_front_id ) {
+					$page_title = get_the_title( $page_on_front_id );
+				}
+
+				if ( ! empty( $page_title ) ) {
+					$title = $page_title;
+				}
+			}
+
+			return $this->prepare_label( $title );
 		}
 
 		/**
@@ -463,12 +468,16 @@ if ( ! class_exists( 'Cherry_Breadcrumbs' ) ) {
 			$this->add_paged_items();
 
 			/**
-			 * Filter final item array
+			 * Filter final items array
 			 *
 			 * @since 1.0.0
-			 * @var   array
+			 * @since 1.1.5 Added 3rd parameter $this.
+			 *
+			 * @param array $this->items Current items array.
+			 * @param array $this->args  Current instance arguments array.
+			 * @param array $this        Current instance.
 			 */
-			$this->items = apply_filters( 'cherry_breadcrumbs_items', $this->items, $this->args );
+			$this->items = apply_filters( 'cherry_breadcrumbs_items', $this->items, $this->args, $this );
 
 		}
 
@@ -476,13 +485,14 @@ if ( ! class_exists( 'Cherry_Breadcrumbs' ) ) {
 		 * Add trail item int array.
 		 *
 		 * @since 1.0.0
+		 * @since 1.1.5 $prepend parameter.
 		 *
 		 * @param string $format Item format to add.
 		 * @param string $label  Item label.
 		 * @param string $url    Item URL.
 		 * @param string $class  Item CSS class.
 		 */
-		public function _add_item( $format = 'link_format', $label, $url = '', $class = '' ) {
+		public function _add_item( $format = 'link_format', $label, $url = '', $class = '', $prepend = false ) {
 
 			$title = esc_attr( wp_strip_all_tags( $label ) );
 			$css   = ( 'target_format' == $format ) ? 'target' : 'link';
@@ -493,9 +503,14 @@ if ( ! class_exists( 'Cherry_Breadcrumbs' ) ) {
 				$class = $this->css[ $css ];
 			}
 
-			$item = sprintf( $this->args[ $format ], $label, $class, $title, $url );
+			$item   = sprintf( $this->args[ $format ], $label, $class, $title, $url );
+			$result = sprintf( $this->args['item_format'], $item, esc_attr( $this->css['item'] ) );
 
-			$this->items[] = sprintf( $this->args['item_format'], $item, esc_attr( $this->css['item'] ) );
+			if ( true === $prepend ) {
+				array_unshift( $this->items, $result );
+			} else {
+				$this->items[] = $result;
+			}
 
 			if ( 'target_format' == $format ) {
 				$this->page_title = $label;
@@ -657,7 +672,7 @@ if ( ! class_exists( 'Cherry_Breadcrumbs' ) ) {
 				return;
 			}
 
-			$url   = network_home_url();
+			$url   = esc_url( network_home_url() );
 			$label = $this->args['labels']['home'];
 
 			$this->_add_item( 'home_format', $label, $url );
@@ -676,7 +691,7 @@ if ( ! class_exists( 'Cherry_Breadcrumbs' ) ) {
 						? 'link_format'
 						: 'home_format';
 
-			$url   = home_url( '/' );
+			$url   = esc_url( home_url( '/' ) );
 			$label = ( is_multisite() && ! is_main_site() && true === $this->args['network'] )
 						? get_bloginfo( 'name' )
 						: $this->args['labels']['home'];
@@ -733,8 +748,10 @@ if ( ! class_exists( 'Cherry_Breadcrumbs' ) ) {
 			/* Display terms for specific post type taxonomy if requested. */
 			$this->add_post_terms( $post_id );
 
+			$post_title = single_post_title( '', false );
+
 			/* End with the post title. */
-			if ( $post_title = single_post_title( '', false ) ) {
+			if ( $post_title ) {
 
 				if ( 1 < get_query_var( 'page' ) ) {
 
@@ -924,10 +941,10 @@ if ( ! class_exists( 'Cherry_Breadcrumbs' ) ) {
 			/* Get the post type object. */
 			$post_type_object = get_post_type_object( get_query_var( 'post_type' ) );
 
-			if ( false !== $post_type_object->rewrite ) {
+			if ( ! empty( $post_type_object ) && false !== $post_type_object->rewrite ) {
 
 				/* If 'with_front' is true, add $wp_rewrite->front to the trail. */
-				if ( $post_type_object->rewrite['with_front'] ) {
+				if ( ! empty( $post_type_object->rewrite ) && $post_type_object->rewrite['with_front'] ) {
 					$this->add_rewrite_front_items();
 				}
 			}
@@ -1125,7 +1142,13 @@ if ( ! class_exists( 'Cherry_Breadcrumbs' ) ) {
 				$this->_add_item(
 					'link_format',
 					$week,
-					add_query_arg( array( 'm' => get_the_time( 'Y' ), 'w' => get_the_time( 'W' ) ), home_url( '/' ) )
+					add_query_arg(
+						array(
+							'm' => get_the_time( 'Y' ),
+							'w' => get_the_time( 'W' ),
+						),
+						esc_url( home_url( '/' ) )
+					)
 				);
 
 			}
@@ -1232,10 +1255,9 @@ if ( ! class_exists( 'Cherry_Breadcrumbs' ) ) {
 			if ( is_paged() ) {
 				$url   = get_search_link();
 				$this->_add_item( 'link_format', $label, $url );
-
+			} else {
+				$this->_add_item( 'target_format', $label );
 			}
-
-			$this->_add_item( 'target_format', $label );
 		}
 
 		/**
@@ -1451,7 +1473,17 @@ if ( ! class_exists( 'Cherry_Breadcrumbs' ) ) {
 				if ( $terms ) {
 
 					/* Sort the terms by ID and get the first category. */
-					usort( $terms, '_usort_terms_by_ID' );
+					if ( function_exists( 'wp_list_sort' ) ) {
+						$terms = wp_list_sort( $terms, array(
+							'term_id' => 'ASC',
+						) );
+
+					} else {
+
+						// Backward compatibility with WordPress 4.6 or later.
+						usort( $terms, '_usort_terms_by_ID' );
+					}
+
 					$term = get_term( $terms[0], 'category' );
 
 					/* If the category has a parent, add the hierarchy to the trail. */

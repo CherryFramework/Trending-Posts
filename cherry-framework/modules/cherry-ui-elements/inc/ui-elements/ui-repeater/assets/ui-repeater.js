@@ -37,7 +37,7 @@
 			// Custom events
 				.on( 'sortable-init', { 'self': this }, this.sortableItem );
 
-			$( window )
+			$( document )
 				.on( 'cherry-ui-elements-init', { 'self': this }, this.sortableItem );
 
 			this.triggers();
@@ -47,7 +47,7 @@
 			$( 'body' ).trigger( 'sortable-init' );
 
 			if ( $target ) {
-				$( window ).trigger( 'cherry-ui-elements-init', { 'target': $target } );
+				$( document ).trigger( 'cherry-ui-elements-init', { 'target': $target } );
 			}
 
 			return this;
@@ -61,6 +61,8 @@
 				rowTemplate = wp.template( tmplName ),
 				widgetId    = $list.data( 'widget-id' ),
 				data        = { index: index };
+
+			widgetId = '__i__' !== widgetId ? widgetId : $list.attr( 'id' ) ;
 
 			if ( widgetId ) {
 				data.widgetId = widgetId;
@@ -116,7 +118,16 @@
 						scrollSensitivity: 40,
 						forcePlaceholderSize: true,
 						forceHelperSize: false,
-						helper: 'clone',
+						distance: 2,
+						tolerance: 'pointer',
+						helper: function( event, element ) {
+							return element.clone()
+								.find( ':input' )
+								.attr( 'name', function( i, currentName ) {
+									return 'sort_' + parseInt( Math.random() * 100000, 10 ).toString() + '_' + currentName;
+								} )
+								.end();
+						},
 						opacity: 0.65,
 						placeholder: self.sortablePlaceholderClass,
 						create: function() {

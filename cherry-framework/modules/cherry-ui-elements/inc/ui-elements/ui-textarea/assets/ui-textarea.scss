@@ -1,6 +1,13 @@
 @import "ui-kit/variables";
 @import "ui-kit/mixins";
+@import "../../../../assets/sass/lock";
 
+.cherry-ui-elements-lock{
+	opacity: 0.5;
+	cursor: no-drop;
+	pointer-events: none;
+	filter: grayscale( 100% );
+}
 .cherry-ui-container{
 	margin: 10px 0 20px 0;
 }
@@ -11,5 +18,5 @@ label.cherry-label{
 textarea.cherry-ui-textarea{
 	width: 100%;
 	@include input();
-	height: 200px;
+	height: 100px;
 }

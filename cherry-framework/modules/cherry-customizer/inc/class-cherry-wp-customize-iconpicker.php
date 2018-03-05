@@ -5,7 +5,7 @@
  * @package    Cherry_Framework
  * @subpackage Modules/Customizer
  * @author     Cherry Team <cherryframework@gmail.com>
- * @copyright  Copyright (c) 2012 - 2016, Cherry Team
+ * @copyright  Copyright (c) 2012 - 2017, Cherry Team
  * @link       http://www.cherryframework.com/
  * @license    http://www.gnu.org/licenses/gpl-3.0.html
  */
@@ -18,11 +18,19 @@ if ( class_exists( 'WP_Customize_Control' ) ) {
 	class Cherry_WP_Customize_Iconpicker extends WP_Customize_Control {
 
 		/**
-		 * Cherry Core instance
+		 * Icons data array
 		 *
+		 * @see cherry-ui-elements/inc/ui-elements/ui-iconpicker/ui-iconpicker.php for data array format.
 		 * @var array
 		 */
 		public $icon_data = array();
+
+		/**
+		 * Trigger to try automatically parse icons from CSS file or not.
+		 *
+		 * @var boolean
+		 */
+		public $auto_parse = false;
 
 		/**
 		 * UI instance
@@ -40,7 +48,11 @@ if ( class_exists( 'WP_Customize_Control' ) ) {
 				<span class="customize-control-title">
 					<?php echo esc_html( $this->label ); ?>
 				</span>
-
+				<?php if ( isset( $this->description ) ) : ?>
+				<span class="description customize-control-description">
+					<?php echo wp_kses_post( $this->description ); ?>
+				</span>
+				<?php endif; ?>
 			</label>
 			<?php
 			echo str_replace(
@@ -58,15 +70,18 @@ if ( class_exists( 'WP_Customize_Control' ) ) {
 			$core       = apply_filters( 'cherry_customizer_get_core', false );
 			$ui_builder = $core->init_module(
 				'cherry-ui-elements',
-				array( 'ui_elements' => array( 'iconpicker' ) )
+				array(
+					'ui_elements' => array( 'iconpicker' ),
+				)
 			);
 
 			$args = array(
-				'type'      => 'iconpicker',
-				'id'        => $this->id,
-				'name'      => $this->id,
-				'value'     => $this->value(),
-				'icon_data' => $this->icon_data,
+				'type'       => 'iconpicker',
+				'id'         => $this->id,
+				'name'       => $this->id,
+				'value'      => $this->value(),
+				'icon_data'  => $this->icon_data,
+				'auto_parse' => $this->auto_parse,
 			);
 
 			add_action( 'customize_controls_print_styles', array( $this, 'print_sets' ) );

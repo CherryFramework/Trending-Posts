@@ -7,7 +7,7 @@
  * @author     Cherry Team <support@cherryframework.com>
  * @copyright  Copyright (c) 2012 - 2015, Cherry Team
  * @link       http://www.cherryframework.com/
- * @license    http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
+ * @license    http://www.gnu.org/licenses/gpl-3.0.en.html
  */
 
 // If this file is called directly, abort.
@@ -78,9 +78,9 @@ if ( ! class_exists( 'UI_Repeater' ) ) {
 		public static $customizer_tmpl_printed = false;
 
 		/**
-		 * Constructor method for the UI_Text class.
+		 * Constructor method for the UI_Repeater class.
 		 *
-		 * @since  1.0.0
+		 * @since 1.0.0
 		 */
 		function __construct( $args = array() ) {
 
@@ -97,7 +97,7 @@ if ( ! class_exists( 'UI_Repeater' ) ) {
 		}
 
 		/**
-		 * Get required attribute
+		 * Get required attribute.
 		 *
 		 * @return string required attribute
 		 */
@@ -111,19 +111,20 @@ if ( ! class_exists( 'UI_Repeater' ) ) {
 		/**
 		 * Render html UI_Repeater.
 		 *
-		 * @since  1.0.1
+		 * @since 1.0.1
 		 */
 		public function render() {
+			$html        = '';
+			$class       = $this->settings['class'] . ' ' . $this->settings['master'];
+			$ui_kit      = ! empty( $this->settings['ui_kit'] ) ? 'cherry-ui-kit' : '';
+			$value       = ! empty( $this->settings['value'] ) ? count( $this->settings['value'] ) : 0 ;
+			$title_field = ! empty( $this->settings['title_field'] ) ? 'data-title-field="' . $this->settings['title_field'] . '"' : '' ;
 
-			$html = '';
-
-			$master_class = ! empty( $this->settings['master'] ) && isset( $this->settings['master'] ) ? esc_html( $this->settings['master'] ) : '';
-
-			$ui_kit = ! empty( $this->settings['ui_kit'] ) ? 'cherry-ui-kit' : '';
+			add_filter( 'cherry_ui_is_repeater', '__return_true' );
 
 			$html .= sprintf( '<div class="cherry-ui-repeater-container cherry-ui-container %1$s %2$s">',
 					$ui_kit,
-					$master_class
+					esc_attr( $class )
 				);
 				if ( '' !== $this->settings['label'] ) {
 					$html .= '<label class="cherry-label" for="' . esc_attr( $this->settings['id'] ) . '">' . esc_html( $this->settings['label'] ) . '</label> ';
@@ -132,8 +133,8 @@ if ( ! class_exists( 'UI_Repeater' ) ) {
 				$html .= sprintf(
 					'<div class="cherry-ui-repeater-list" data-name="%1$s" data-index="%2$s" data-widget-id="__i__" %3$s id="%4$s">',
 					$this->get_tmpl_name(),
-					( ! empty( $this->settings['value'] ) ) ? count( $this->settings['value'] ) : 0,
-					( ! empty( $this->settings['title_field'] ) ) ? 'data-title-field="' . $this->settings['title_field'] . '"': '',
+					$value,
+					$title_field,
 					esc_attr( $this->settings['id'] )
 				);
 
@@ -150,7 +151,36 @@ if ( ! class_exists( 'UI_Repeater' ) ) {
 					esc_html( $this->settings['add_label'] )
 				);
 			$html .= '</div>';
+
+			/**
+			 * Maybe add js repeater template to response
+			 *
+			 * @var bool
+			 */
+			$add_js_to_response = apply_filters( 'cherry_ui_add_data_to_element', false );
+
+			if ( $add_js_to_response ) {
+				$html .= $this->get_js_template();
+			}
+
+			$html .= $this->get_additional_data();
+
+			remove_all_filters( 'cherry_ui_is_repeater' );
+
 			return $html;
+		}
+
+		/**
+		 * Get additional data to return
+		 * @return [type] [description]
+		 */
+		public function get_additional_data() {
+			$data = apply_filters( 'cherry_ui_add_repater_data', array() );
+
+			if ( ! empty( $data ) ) {
+				return implode( ' ', $data );
+			}
+
 		}
 
 		/**
@@ -219,14 +249,16 @@ if ( ! class_exists( 'UI_Repeater' ) ) {
 				return '"type" and "name" are required fields for UI_Repeater items';
 			}
 
-			$field = wp_parse_args( $field, array( 'value' => '' ) );
-			$parent_name = str_replace( '__i__', $widget_index, $this->settings['name'] );
+			$field = wp_parse_args( $field, array(
+				'value' => '',
+			) );
 
+			$parent_name    = str_replace( '__i__', $widget_index, $this->settings['name'] );
 			$field['id']    = sprintf( '%s-%s', $field['id'], $index );
 			$field['value'] = isset( $this->data[ $field['name'] ] ) ? $this->data[ $field['name'] ] : $field['value'];
 			$field['name']  = sprintf( '%1$s[item-%2$s][%3$s]', $parent_name, $index, $field['name'] );
 
-			$ui_class_name = 'UI_' . ucwords( $field['type'] );
+			$ui_class_name  = 'UI_' . ucwords( $field['type'] );
 
 			if ( ! class_exists( $ui_class_name ) ) {
 				return '<p>Class <b>' . $ui_class_name . '</b> not exist!</p>';
@@ -238,25 +270,24 @@ if ( ! class_exists( 'UI_Repeater' ) ) {
 		}
 
 		/**
-		 * Enqueue javascript and stylesheet UI_Text
+		 * Enqueue javascript and stylesheet UI_Repeater.
 		 *
-		 * @since  1.0.0
+		 * @since 1.0.0
 		 */
 		public static function enqueue_assets() {
-
 			wp_enqueue_style(
 				'ui-repeater',
-				esc_url( Cherry_Core::base_url( 'assets/min/ui-repeater.min.css', __FILE__ ) ),
+				esc_url( Cherry_Core::base_url( 'inc/ui-elements/ui-repeater/assets/min/ui-repeater.min.css', Cherry_UI_Elements::$module_path ) ),
 				array(),
-				'1.0.0',
+				Cherry_UI_Elements::$core_version,
 				'all'
 			);
 
 			wp_enqueue_script(
 				'ui-repeater',
-				esc_url( Cherry_Core::base_url( 'assets/min/ui-repeater.min.js', __FILE__ ) ),
+				esc_url( Cherry_Core::base_url( 'inc/ui-elements/ui-repeater/assets/min/ui-repeater.min.js', Cherry_UI_Elements::$module_path ) ),
 				array( 'wp-util', 'jquery-ui-sortable' ),
-				'1.0.0',
+				Cherry_UI_Elements::$core_version,
 				true
 			);
 

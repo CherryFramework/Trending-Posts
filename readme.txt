@@ -1,8 +1,9 @@
 === Trending Posts ===
-Contributors: templatemonster
+Contributors: TemplateMonster 2002
 Tags: posts, widget, popular, views, rating, comments
 Requires at least: 4.4.2
-Tested up to: 4.4.2
+Tested up to: 4.9.4
+Stable tag: 1.0.1
 License: GPL-3.0+
 License URI: http://www.gnu.org/licenses/gpl-3.0.txt
 

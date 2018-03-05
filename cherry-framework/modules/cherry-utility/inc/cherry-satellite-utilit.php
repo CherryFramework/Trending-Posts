@@ -7,7 +7,7 @@
  * @author     Cherry Team <support@cherryframework.com>
  * @copyright  Copyright (c) 2012 - 2015, Cherry Team
  * @link       http://www.cherryframework.com/
- * @license    http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
+ * @license    http://www.gnu.org/licenses/gpl-3.0.en.html
  */
 
 // If this file is called directly, abort.
@@ -87,13 +87,15 @@ if ( ! class_exists( 'Cherry_Satellite_Utilit' ) ) {
 		 * @since  1.0.0
 		 * @return string
 		 */
-		public function cut_text( $text = '', $length = 0, $trimmed_type = 'word', $after ) {
-			$length = (int) $length;
+		public function cut_text( $text = '', $length = -1, $trimmed_type = 'word', $after, $content = false ) {
 
-			if ( $length ) {
-				$text = strip_shortcodes( $text );
-				$text = apply_filters( 'the_content', $text );
-				$text = str_replace( ']]>', ']]&gt;', $text );
+			if ( -1 !== $length ) {
+
+				if ( $content ) {
+					$text = strip_shortcodes( $text );
+					$text = apply_filters( 'the_content', $text );
+					$text = str_replace( ']]>', ']]&gt;', $text );
+				}
 
 				if ( 'word' === $trimmed_type ) {
 					$text = wp_trim_words( $text, $length, $after );
@@ -112,15 +114,51 @@ if ( ! class_exists( 'Cherry_Satellite_Utilit' ) ) {
 		 * @return array
 		 */
 		public function get_thumbnail_size_array( $size ) {
-			global $_wp_additional_image_sizes;
-			$size_array = array();
-			if ( array_key_exists( $size, $_wp_additional_image_sizes ) ) {
-				$size_array = $_wp_additional_image_sizes[ $size ];
+			$sizes = $this->get_image_sizes();
+
+			if ( isset( $sizes[ $size ] ) ) {
+				$size_array = $sizes[ $size ];
+
+			} else if ( isset( $sizes['post-thumbnail'] ) ) {
+				$size_array = $sizes['post-thumbnail'];
+
 			} else {
-				$size_array = $_wp_additional_image_sizes['post-thumbnail'];
+				$size_array = $sizes['thumbnail'];
 			}
 
 			return $size_array;
+		}
+
+		/**
+		 * Get size information for all currently-registered image sizes.
+		 *
+		 * @global $_wp_additional_image_sizes
+		 * @uses   get_intermediate_image_sizes()
+		 * @link   https://codex.wordpress.org/Function_Reference/get_intermediate_image_sizes
+		 * @since  1.1.6
+		 * @return array $sizes Data for all currently-registered image sizes.
+		 */
+		function get_image_sizes() {
+			global $_wp_additional_image_sizes;
+
+			$sizes = array();
+
+			foreach ( get_intermediate_image_sizes() as $_size ) {
+				if ( in_array( $_size, array( 'thumbnail', 'medium', 'medium_large', 'large' ) ) ) {
+					$sizes[ $_size ]['width']  = get_option( "{$_size}_size_w" );
+					$sizes[ $_size ]['height'] = get_option( "{$_size}_size_h" );
+					$sizes[ $_size ]['crop']   = (bool) get_option( "{$_size}_crop" );
+
+				} elseif ( isset( $_wp_additional_image_sizes[ $_size ] ) ) {
+					$sizes[ $_size ] = array(
+						'width'  => $_wp_additional_image_sizes[ $_size ]['width'],
+						'height' => $_wp_additional_image_sizes[ $_size ]['height'],
+						'crop'   => $_wp_additional_image_sizes[ $_size ]['crop'],
+					);
+				}
+			}
+
+			return $sizes;
 		}
 
 		/**
@@ -137,22 +175,35 @@ if ( ! class_exists( 'Cherry_Satellite_Utilit' ) ) {
 			}
 		}
 
-
-
 		/**
 		 * Return post terms.
 		 *
 		 * @since  1.0.0
 		 * @param [type] $tax - category, post_tag, post_format.
-		 * @param [type] $key - slug, term_id.
+		 * @param [type] $return_key - slug, term_id.
 		 * @return array
 		 */
-		public function get_terms_array( $tax = 'category', $key = 'slug' ) {
+		public function get_terms_array( $tax = array( 'category' ), $return_key = 'slug' ) {
 			$terms = array();
-			$all_terms = (array) get_terms( $tax, array( 'hide_empty' => 0, 'hierarchical' => 0 ) );
+			$tax = is_array( $tax ) ? $tax : array( $tax ) ;
+
+			foreach ( $tax as $key => $value ) {
+				if ( ! taxonomy_exists( $value ) ) {
+					unset( $tax[ $key ] );
+				}
+			}
+
+			$all_terms = (array) get_terms( $tax, array(
+				'hide_empty'   => 0,
+				'hierarchical' => 0,
+			) );
+
+			if ( empty( $all_terms ) || is_wp_error( $all_terms ) ) {
+				return '';
+			}
 
 			foreach ( $all_terms as $term ) {
-				$terms[ $term->$key ] = $term->name;
+				$terms[ $term->$return_key ] = $term->name;
 			}
 
 			return $terms;
